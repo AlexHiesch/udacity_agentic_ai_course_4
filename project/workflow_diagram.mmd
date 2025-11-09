@@ -1,0 +1,95 @@
+graph TB
+    %% Styling
+    classDef orchestrator fill:#ff9900,stroke:#cc7700,stroke-width:3px,color:#000
+    classDef agent fill:#4a90e2,stroke:#2e5c8a,stroke-width:2px,color:#fff
+    classDef tool fill:#50c878,stroke:#3a9b5c,stroke-width:2px,color:#000
+    classDef llm fill:#9b59b6,stroke:#7d3c98,stroke-width:2px,color:#fff
+    classDef db fill:#e74c3c,stroke:#c0392b,stroke-width:2px,color:#fff
+    classDef decision fill:#f1c40f,stroke:#d4a017,stroke-width:2px,color:#000
+    
+    %% Customer Request Input
+    START([Customer Request<br/>Natural Language]) --> ORCH
+    
+    %% Orchestrator Agent
+    ORCH[🎯 ORCHESTRATOR AGENT<br/>Coordinates all workers]:::orchestrator
+    
+    %% Step 1: Parsing Agent
+    ORCH -->|1. Parse Request| PARSE[🧠 PARSING AGENT<br/>LLM-based NLP]:::agent
+    PARSE -->|Uses| LLM1[OpenAI GPT-4o-mini]:::llm
+    PARSE -->|Extracts| ITEMS[Structured Items:<br/>item_name, quantity]
+    
+    %% Step 2: Inventory Agent
+    ITEMS -->|2. Check Availability| INV[📦 INVENTORY AGENT<br/>Stock Management]:::agent
+    INV -->|Uses Tools| T1[check_inventory_availability]:::tool
+    INV -->|Uses Tools| T2[get_inventory_list]:::tool
+    INV -->|Uses Tools| T3[check_restock_needed]:::tool
+    T1 & T2 & T3 -->|Query| DB1[(SQLite Database<br/>munder_difflin.db)]:::db
+    
+    %% Decision: Restock Needed?
+    INV -->|Availability Results| DEC1{Items Need<br/>Restocking?}:::decision
+    
+    %% Step 3: Restocking Agent (if needed)
+    DEC1 -->|Yes| REST[🔄 RESTOCKING AGENT<br/>Supplier Orders]:::agent
+    REST -->|Uses| T4[restock_item<br/>get_supplier_delivery_date<br/>get_cash_balance]:::tool
+    T4 -->|Create Transaction| DB1
+    REST -->|Restock Complete| DEC2
+    DEC1 -->|No| DEC2
+    
+    %% Decision: All Items Available?
+    DEC2{All Items<br/>Available?}:::decision
+    
+    %% Step 4: Quoting Agent
+    DEC2 -->|Yes| QUOTE[💰 QUOTING AGENT<br/>Price Calculation]:::agent
+    DEC2 -->|Some Unavailable| QUOTE
+    QUOTE -->|Uses Tools| T5[calculate_bulk_discount<br/>get_item_price]:::tool
+    QUOTE -->|Business Logic| T6[generate_quote<br/>search_quote_history]:::tool
+    QUOTE -->|Generate Explanation| LLM2[OpenAI GPT-4o-mini]:::llm
+    T5 & T6 -->|Query| DB1
+    
+    %% Decision: Quote Can Be Fulfilled?
+    QUOTE -->|Quote Ready| DEC3{Quote Can Be<br/>Fulfilled?}:::decision
+    
+    %% Step 5: Ordering Agent (if fulfillable)
+    DEC3 -->|Yes - All Available| ORDER[🛒 ORDERING AGENT<br/>Sales Processing]:::agent
+    ORDER -->|Uses| T7[place_order<br/>create_transaction]:::tool
+    T7 -->|Update Inventory<br/>Record Revenue| DB1
+    ORDER -->|Order Complete| RESPONSE1
+    
+    %% Alternative: Cannot Fulfill
+    DEC3 -->|No - Items Unavailable| RESPONSE2[⚠️ Cannot Fulfill Response<br/>With Reasons]
+    RESPONSE2 --> FINAL
+    
+    %% Success Response
+    RESPONSE1[✅ Success Response<br/>Professional Quote<br/>Order Confirmation] --> FINAL
+    
+    %% Final Output
+    FINAL([Customer Response<br/>with Details])
+    
+    %% Framework Integration
+    subgraph FRAMEWORK [smolagents Framework]
+        TOOLS[All Tools Decorated<br/>with @tool]:::tool
+        TOOLS -.-> T1 & T2 & T3 & T5 & T7
+    end
+    
+    %% Database Helper Functions
+    subgraph HELPERS [Helper Functions from Starter Code]
+        H1[create_transaction]
+        H2[get_all_inventory]
+        H3[get_stock_level]
+        H4[get_supplier_delivery_date]
+        H5[get_cash_balance]
+        H6[generate_financial_report]
+        H7[search_quote_history]
+    end
+    
+    DB1 -.->|Uses| HELPERS
+    
+    %% Legend
+    subgraph LEGEND [Legend]
+        L1[🎯 Orchestrator]:::orchestrator
+        L2[Agent]:::agent
+        L3[Tool @tool]:::tool
+        L4[LLM]:::llm
+        L5[Database]:::db
+        L6{Decision}:::decision
+    end

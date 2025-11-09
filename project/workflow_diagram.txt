@@ -1,0 +1,217 @@
+MUNDER DIFFLIN MULTI-AGENT SYSTEM - WORKFLOW DIAGRAM
+====================================================
+
+                        ┌─────────────────────────┐
+                        │  CUSTOMER REQUEST       │
+                        │  (Natural Language)     │
+                        └───────────┬─────────────┘
+                                    │
+                                    ▼
+                        ┌─────────────────────────┐
+                        │  ORCHESTRATOR AGENT     │
+                        │  (Main Coordinator)     │
+                        └───────────┬─────────────┘
+                                    │
+            ┌───────────────────────┼───────────────────────┐
+            │                       │                       │
+            ▼                       ▼                       ▼
+    ┌───────────────┐      ┌───────────────┐      ┌───────────────┐
+    │ PARSING AGENT │      │   DATABASE    │      │    TOOLS      │
+    │   (LLM-based) │      │   (SQLite)    │      │  (Functions)  │
+    └───────┬───────┘      └───────┬───────┘      └───────┬───────┘
+            │                      │                       │
+            │ Extract Items        │ Query Data            │
+            │ & Quantities         │ Update Records        │
+            │                      │                       │
+            └──────────────┬───────┴───────────────────────┘
+                           │
+                           ▼
+               ┌─────────────────────────┐
+               │  Structured Item List   │
+               │  [{item, quantity}, ...]│
+               └───────────┬─────────────┘
+                           │
+                           ▼
+               ┌─────────────────────────┐
+               │   INVENTORY AGENT       │
+               │  Check Availability     │
+               └───────────┬─────────────┘
+                           │
+                ┌──────────┴──────────┐
+                │                     │
+        [All Available?]         [Need Restock?]
+                │                     │
+                NO                    YES
+                │                     │
+                │                     ▼
+                │         ┌─────────────────────────┐
+                │         │  RESTOCKING AGENT       │
+                │         │  - Check Cash Balance   │
+                │         │  - Order from Supplier  │
+                │         │  - Estimate Delivery    │
+                │         └───────────┬─────────────┘
+                │                     │
+                └──────────┬──────────┘
+                           │
+                           ▼
+               ┌─────────────────────────┐
+               │   QUOTING AGENT         │
+               │  - Calculate Prices     │
+               │  - Apply Bulk Discounts │
+               │  - Search History       │
+               │  - Generate Explanation │
+               └───────────┬─────────────┘
+                           │
+                           ▼
+               ┌─────────────────────────┐
+               │     Quote Generated     │
+               │  - Item breakdown       │
+               │  - Discount details     │
+               │  - Total amount         │
+               │  - Professional message │
+               └───────────┬─────────────┘
+                           │
+                           ▼
+               ┌─────────────────────────┐
+               │   ORDERING AGENT        │
+               │  - Verify Availability  │
+               │  - Create Transactions  │
+               │  - Update Inventory     │
+               │  - Record Revenue       │
+               └───────────┬─────────────┘
+                           │
+                           ▼
+               ┌─────────────────────────┐
+               │   Order Confirmation    │
+               │  - Transaction IDs      │
+               │  - Updated Balances     │
+               │  - Success Status       │
+               └───────────┬─────────────┘
+                           │
+                           ▼
+               ┌─────────────────────────┐
+               │  ORCHESTRATOR AGENT     │
+               │  Compile Final Response │
+               └───────────┬─────────────┘
+                           │
+                           ▼
+               ┌─────────────────────────┐
+               │  CUSTOMER RESPONSE      │
+               │  - Quote details        │
+               │  - Order confirmation   │
+               │  - Restock notices      │
+               │  - Total amount         │
+               └─────────────────────────┘
+
+
+AGENT COMMUNICATION FLOW
+========================
+
+1. Orchestrator → Parsing Agent
+   Message: Raw customer request + date
+   Response: {success: bool, items: [{item_name, quantity}]}
+
+2. Orchestrator → Inventory Agent
+   Message: Item list + date
+   Response: {availability_results: [], items_to_restock: [], all_available: bool}
+
+3. Orchestrator → Restocking Agent (if needed)
+   Message: Items to restock + date
+   Response: {restock_results: [], total_cost: float, success: bool}
+
+4. Orchestrator → Quoting Agent
+   Message: Item list + date + customer context
+   Response: {quote_items: [], total_amount: float, explanation: str}
+
+5. Orchestrator → Ordering Agent
+   Message: Quote object + date
+   Response: {order_results: [], total_revenue: float, success: bool}
+
+6. Orchestrator → Customer
+   Message: Comprehensive formatted response text
+
+
+DATA DEPENDENCIES
+=================
+
+┌──────────────────┐
+│   inventory      │ ────┐
+│  - item_name     │     │
+│  - unit_price    │     │
+│  - current_stock │     │
+└──────────────────┘     │
+                         │
+                         ├──→ INVENTORY AGENT
+                         │
+┌──────────────────┐     │
+│  transactions    │ ────┤
+│  - item_name     │     │
+│  - type          │     │
+│  - units         │     │
+│  - price         │     │
+│  - date          │     │
+└──────────────────┘     │
+                         │
+                         ├──→ ORDERING AGENT
+                         │
+┌──────────────────┐     │    RESTOCKING AGENT
+│  quotes          │ ────┤
+│  - request_id    │     │
+│  - total_amount  │     │
+│  - explanation   │     │
+└──────────────────┘     │
+                         │
+                         ├──→ QUOTING AGENT
+                         │
+┌──────────────────┐     │
+│ quote_requests   │ ────┘
+│  - id            │
+│  - request       │
+│  - response      │
+└──────────────────┘
+
+
+DECISION POINTS
+===============
+
+1. Is request parseable?
+   YES → Continue to inventory check
+   NO → Return error message
+
+2. Are all items available?
+   YES → Proceed to quoting
+   NO → Check if restocking possible
+
+3. Can we afford to restock?
+   YES → Order from supplier, wait for delivery
+   NO → Inform customer of unavailability
+
+4. Are discounts applicable?
+   100+ units → Apply appropriate discount tier
+   <100 units → No discount
+
+5. Is order successful?
+   YES → Generate confirmation
+   NO → Return error and rollback
+
+
+BULK DISCOUNT TIERS
+===================
+
+Quantity Range     | Discount | Applied By
+-------------------|----------|-------------
+1 - 99             | 0%       | Quoting Agent
+100 - 500          | 5%       | Quoting Agent
+501 - 1,000        | 10%      | Quoting Agent
+1,001+             | 15%      | Quoting Agent
+
+
+DELIVERY TIME ESTIMATION
+========================
+
+Order Size         | Lead Time | Applied By
+-------------------|-----------|------------------
+1 - 10 units       | Same day  | Restocking Agent
+11 - 100 units     | 1 day     | Restocking Agent
+101 - 1,000 units  | 4 days    | Restocking Agent
+1,001+ units       | 7 days    | Restocking Agent

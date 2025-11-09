@@ -8,10 +8,6 @@ from sqlalchemy.sql import text
 from datetime import datetime, timedelta
 from typing import Dict, List, Union
 from sqlalchemy import create_engine, Engine
-import json
-
-# Import smolagents for tool decoration
-from smolagents import tool
 
 # Create an SQLite database
 db_engine = create_engine("sqlite:///munder_difflin.db")
@@ -602,14 +598,7 @@ dotenv.load_dotenv()
 from smolagents import CodeAgent, ToolCallingAgent, tool, LiteLLMModel
 import json
 
-# Initialize OpenAI client for direct LLM calls
-from openai import OpenAI
-client = OpenAI(
-    api_key=os.getenv("OPENAI_API_KEY"),
-    base_url=os.getenv("OPENAI_BASE_URL", "https://openai.vocareum.com/v1")
-)
-
-# Initialize LiteLLM model for smolagents (if needed for tool calling agents)
+# Initialize LiteLLM model for smolagents
 model = LiteLLMModel(
     model_id="openai/gpt-4o-mini",
     api_key=os.getenv("OPENAI_API_KEY"),
@@ -653,12 +642,6 @@ def check_inventory_availability(item_name: str, quantity: int, date: str) -> st
 def get_inventory_list(date: str) -> str:
     """
     Get a formatted list of all available inventory items with their prices.
-    
-    Args:
-        date: Date in YYYY-MM-DD format for checking inventory
-        
-    Returns:
-        Formatted string listing all available items with prices
     """
     inventory_dict = get_all_inventory(date)
     inventory_df = pd.read_sql("SELECT * FROM inventory", db_engine)
@@ -673,52 +656,31 @@ def get_inventory_list(date: str) -> str:
     return result
 
 
-@tool
-def check_restock_needed(item_name: str, date: str) -> str:
+def check_restock_needed(item_name: str, date: str) -> bool:
     """
     Check if an item needs restocking based on minimum stock levels.
-    
-    Args:
-        item_name: Name of the item to check
-        date: Date in YYYY-MM-DD format
-        
-    Returns:
-        JSON string with restock recommendation
     """
     stock_info = get_stock_level(item_name, date)
     inventory_df = pd.read_sql("SELECT * FROM inventory WHERE item_name = ?", 
                                db_engine, params=(item_name,))
     
     if stock_info.empty or inventory_df.empty:
-        return json.dumps({"needs_restock": False, "reason": "Item not found"})
+        return False
     
     current_stock = int(stock_info["current_stock"].iloc[0])
     min_stock = int(inventory_df["min_stock_level"].iloc[0])
     
-    needs_restock = current_stock < min_stock
-    return json.dumps({
-        "needs_restock": needs_restock,
-        "current_stock": current_stock,
-        "min_stock": min_stock
-    })
+    return current_stock < min_stock
 
 
 # Tools for quoting agent
 
-@tool
-def calculate_bulk_discount(quantity: int, unit_price: float) -> str:
+def calculate_bulk_discount(quantity: int, unit_price: float) -> float:
     """
     Calculate bulk discount based on quantity.
     - 100-500 units: 5% discount
     - 501-1000 units: 10% discount
     - 1001+ units: 15% discount
-    
-    Args:
-        quantity: Number of units
-        unit_price: Price per unit
-        
-    Returns:
-        JSON string with total price after discount
     """
     total = quantity * unit_price
     
@@ -731,51 +693,19 @@ def calculate_bulk_discount(quantity: int, unit_price: float) -> str:
     else:
         discount = 0.0
     
-    final_price = total * (1 - discount)
-    return json.dumps({
-        "total_before_discount": total,
-        "discount_percent": discount * 100,
-        "final_price": final_price
-    })
+    return total * (1 - discount)
 
 
-@tool
-def get_item_price(item_name: str) -> str:
+def get_item_price(item_name: str) -> float:
     """
     Get the unit price for an item from inventory.
-    
-    Args:
-        item_name: Name of the item
-        
-    Returns:
-        JSON string with item price
     """
     inventory_df = pd.read_sql("SELECT unit_price FROM inventory WHERE item_name = ?",
                                db_engine, params=(item_name,))
     
     if not inventory_df.empty:
-        price = float(inventory_df["unit_price"].iloc[0])
-        return json.dumps({"item_name": item_name, "unit_price": price})
-    return json.dumps({"item_name": item_name, "unit_price": 0.0, "error": "Item not found"})
-
-
-# Helper functions for internal use (return native Python types instead of JSON strings)
-def _check_inventory_availability_dict(item_name: str, quantity: int, date: str) -> Dict:
-    """Internal helper that returns Dict instead of JSON string"""
-    result_json = check_inventory_availability(item_name, quantity, date)
-    return json.loads(result_json)
-
-def _get_item_price_float(item_name: str) -> float:
-    """Internal helper that returns float instead of JSON string"""
-    result_json = get_item_price(item_name)
-    result = json.loads(result_json)
-    return result.get("unit_price", 0.0)
-
-def _calculate_bulk_discount_float(quantity: int, unit_price: float) -> float:
-    """Internal helper that returns float instead of JSON string"""
-    result_json = calculate_bulk_discount(quantity, unit_price)
-    result = json.loads(result_json)
-    return result.get("final_price", 0.0)
+        return float(inventory_df["unit_price"].iloc[0])
+    return 0.0
 
 
 def generate_quote(items: List[Dict], date: str) -> Dict:
@@ -791,8 +721,8 @@ def generate_quote(items: List[Dict], date: str) -> Dict:
         item_name = item["item_name"]
         quantity = item["quantity"]
         
-        # Check availability using helper function
-        availability = _check_inventory_availability_dict(item_name, quantity, date)
+        # Check availability
+        availability = check_inventory_availability(item_name, quantity, date)
         
         if not availability["available"]:
             unavailable_items.append({
@@ -803,9 +733,9 @@ def generate_quote(items: List[Dict], date: str) -> Dict:
             })
             continue
         
-        # Calculate price with discount using helper functions
-        unit_price = _get_item_price_float(item_name)
-        discounted_total = _calculate_bulk_discount_float(quantity, unit_price)
+        # Calculate price with discount
+        unit_price = get_item_price(item_name)
+        discounted_total = calculate_bulk_discount(quantity, unit_price)
         
         quote_items.append({
             "item_name": item_name,
@@ -839,8 +769,8 @@ def place_order(items: List[Dict], date: str) -> Dict:
         quantity = item["quantity"]
         price = item["price"]
         
-        # Check one more time if stock is available using helper
-        availability = _check_inventory_availability_dict(item_name, quantity, date)
+        # Check one more time if stock is available
+        availability = check_inventory_availability(item_name, quantity, date)
         
         if availability["available"]:
             # Create sales transaction
@@ -881,7 +811,7 @@ def restock_item(item_name: str, quantity: int, date: str) -> Dict:
     """
     Restock an item (creates stock_orders transaction).
     """
-    unit_price = _get_item_price_float(item_name)
+    unit_price = get_item_price(item_name)
     total_cost = quantity * unit_price
     
     # Check if we have enough cash
@@ -976,8 +906,8 @@ def inventory_agent(items: List[Dict], date: str) -> Dict:
         item_name = item["item_name"]
         quantity = item["quantity"]
         
-        # Check availability using helper
-        availability = _check_inventory_availability_dict(item_name, quantity, date)
+        # Check availability
+        availability = check_inventory_availability(item_name, quantity, date)
         availability_results.append(availability)
         
         # If not available, check if we need to restock

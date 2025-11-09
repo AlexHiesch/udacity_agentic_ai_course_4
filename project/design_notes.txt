@@ -1,0 +1,160 @@
+MUNDER DIFFLIN MULTI-AGENT SYSTEM - DESIGN NOTES
+================================================
+
+Project Overview:
+-----------------
+This multi-agent system automates paper supply operations for Munder Difflin Paper Company,
+including inventory management, quote generation, and order fulfillment.
+
+Architecture Pattern:
+--------------------
+The system uses an "Orchestrator and Workers" pattern with 5 specialized agents:
+
+1. PARSING AGENT (LLM-based)
+   - Purpose: Extract structured data from natural language customer requests
+   - Input: Raw customer request text
+   - Output: JSON with item names and quantities
+   - Tool: OpenAI API for natural language understanding
+
+2. INVENTORY AGENT
+   - Purpose: Check stock availability and identify restocking needs
+   - Input: List of items with requested quantities
+   - Output: Availability status for each item, list of items needing restock
+   - Tools: check_inventory_availability(), check_restock_needed()
+
+3. QUOTING AGENT
+   - Purpose: Generate professional quotes with bulk discounts
+   - Input: Items list, customer context
+   - Output: Detailed quote with pricing breakdown and explanation
+   - Tools: generate_quote(), calculate_bulk_discount(), search_quote_history()
+   - Features:
+     * Bulk discounts: 5% (100-500), 10% (501-1000), 15% (1001+)
+     * Historical quote reference for consistency
+     * LLM-generated professional explanations
+
+4. ORDERING AGENT
+   - Purpose: Process approved orders and update transactions
+   - Input: Quote object with items and pricing
+   - Output: Order confirmation with transaction IDs
+   - Tools: place_order(), create_transaction()
+
+5. RESTOCKING AGENT
+   - Purpose: Replenish inventory when items are low/unavailable
+   - Input: List of items needing restock
+   - Output: Restocking confirmation with delivery dates
+   - Tools: restock_item(), get_supplier_delivery_date()
+   - Features: Automatic cash balance checking, delivery date estimation
+
+ORCHESTRATOR AGENT:
+------------------
+Coordinates all agents in the following workflow:
+
+Step 1: Parse Request
+  └─> Extract items and quantities using LLM
+
+Step 2: Check Inventory
+  └─> Verify stock availability for all items
+
+Step 3: Restock if Needed
+  └─> Automatically order items that are out of stock
+  └─> Wait for delivery dates before proceeding
+
+Step 4: Generate Quote
+  └─> Calculate prices with bulk discounts
+  └─> Search historical quotes for reference
+  └─> Generate professional explanation
+
+Step 5: Process Order
+  └─> Create sales transactions
+  └─> Update inventory levels
+  └─> Deduct from stock
+
+Step 6: Return Response
+  └─> Comprehensive customer-facing message
+  └─> Order confirmation details
+  └─> Financial summary
+
+Data Flow:
+----------
+Customer Request (text)
+  ↓
+[Parsing Agent] → Structured items list
+  ↓
+[Inventory Agent] → Availability status + restock needs
+  ↓
+[Restocking Agent] → Restock confirmation (if needed)
+  ↓
+[Quoting Agent] → Professional quote with pricing
+  ↓
+[Ordering Agent] → Order confirmation + transactions
+  ↓
+Customer Response (text)
+
+Key Features:
+-------------
+- Natural language processing for customer requests
+- Automatic inventory management and restocking
+- Intelligent bulk discount calculation
+- Historical quote reference for consistency
+- Complete transaction tracking
+- Real-time financial reporting
+- Cash flow management with balance checking
+- Delivery date estimation based on order size
+
+Tools and Technologies:
+-----------------------
+- OpenAI API: Natural language processing and response generation
+- SQLAlchemy: Database operations and transaction management
+- Pandas: Data manipulation and CSV processing
+- SQLite: Persistent storage for inventory, transactions, quotes
+- Python datetime: Date handling and delivery estimation
+
+Database Schema:
+----------------
+1. inventory: item_name, category, unit_price, current_stock, min_stock_level
+2. transactions: id, item_name, transaction_type, units, price, transaction_date
+3. quotes: request_id, total_amount, quote_explanation, job_type, order_size, event_type, order_date
+4. quote_requests: id, job, event, request, response
+
+Error Handling:
+---------------
+- Graceful handling of unavailable items
+- Cash balance validation before restocking
+- Transaction rollback on failures
+- Informative error messages to customers
+- Logging of failed operations
+
+Testing:
+--------
+The system processes 20 test scenarios from quote_requests_sample.csv:
+- Various event types (ceremonies, parties, conferences, etc.)
+- Different customer contexts (schools, offices, hotels, etc.)
+- Range of order sizes and item combinations
+- Results saved to test_results.csv for analysis
+
+Success Metrics:
+----------------
+- All customer requests successfully parsed
+- Inventory automatically replenished when needed
+- Quotes generated with appropriate bulk discounts
+- Orders processed with accurate financial tracking
+- Cash and inventory balances maintained correctly
+
+Implementation Notes:
+---------------------
+- Maximum of 5 agents as per project requirements ✓
+- Text-based communication throughout ✓
+- Bulk discounts applied on all quotes ✓
+- Historical data used for reference ✓
+- Exact item names from database used ✓
+- Dates included in all agent communications ✓
+
+Next Steps for Enhancement:
+---------------------------
+1. Add customer notification system for restocking delays
+2. Implement predictive inventory management
+3. Add multi-supplier support with price comparison
+4. Create customer loyalty discount tiers
+5. Add seasonal pricing adjustments
+6. Implement rush order handling with premium pricing
+7. Add quote approval workflow for large orders
