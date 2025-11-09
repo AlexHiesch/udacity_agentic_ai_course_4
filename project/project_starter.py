@@ -4,11 +4,12 @@ import os
 import time
 import dotenv
 import ast
+import re
+import json
 from sqlalchemy.sql import text
 from datetime import datetime, timedelta
 from typing import Dict, List, Union
 from sqlalchemy import create_engine, Engine
-import json
 
 # Import smolagents for tool decoration
 from smolagents import tool
@@ -759,29 +760,19 @@ def get_item_price(item_name: str) -> str:
     return json.dumps({"item_name": item_name, "unit_price": 0.0, "error": "Item not found"})
 
 
-# Helper functions for internal use (return native Python types instead of JSON strings)
-def _check_inventory_availability_dict(item_name: str, quantity: int, date: str) -> Dict:
-    """Internal helper that returns Dict instead of JSON string"""
-    result_json = check_inventory_availability(item_name, quantity, date)
-    return json.loads(result_json)
-
-def _get_item_price_float(item_name: str) -> float:
-    """Internal helper that returns float instead of JSON string"""
-    result_json = get_item_price(item_name)
-    result = json.loads(result_json)
-    return result.get("unit_price", 0.0)
-
-def _calculate_bulk_discount_float(quantity: int, unit_price: float) -> float:
-    """Internal helper that returns float instead of JSON string"""
-    result_json = calculate_bulk_discount(quantity, unit_price)
-    result = json.loads(result_json)
-    return result.get("final_price", 0.0)
-
-
 def generate_quote(items: List[Dict], date: str) -> Dict:
     """
     Generate a quote for multiple items with bulk discounts.
-    items: List of {item_name, quantity}
+    
+    This function uses helper functions DIRECTLY (not via tools).
+    Tools are only for framework agents.
+    
+    Args:
+        items: List of {item_name, quantity}
+        date: Date for quote
+        
+    Returns:
+        Dict with quote details
     """
     quote_items = []
     total_amount = 0.0
@@ -791,21 +782,42 @@ def generate_quote(items: List[Dict], date: str) -> Dict:
         item_name = item["item_name"]
         quantity = item["quantity"]
         
-        # Check availability using helper function
-        availability = _check_inventory_availability_dict(item_name, quantity, date)
+        # Check availability using helper function DIRECTLY
+        stock_info = get_stock_level(item_name, date)
+        current_stock = int(stock_info["current_stock"].iloc[0]) if not stock_info.empty else 0
+        available = current_stock >= quantity
         
-        if not availability["available"]:
+        if not available:
             unavailable_items.append({
                 "item_name": item_name,
                 "requested": quantity,
-                "available": availability["current_stock"],
-                "shortfall": availability["shortfall"]
+                "available": current_stock,
+                "shortfall": max(0, quantity - current_stock)
             })
             continue
         
-        # Calculate price with discount using helper functions
-        unit_price = _get_item_price_float(item_name)
-        discounted_total = _calculate_bulk_discount_float(quantity, unit_price)
+        # Get price from database DIRECTLY
+        inventory_df = pd.read_sql("SELECT unit_price FROM inventory WHERE item_name = ?",
+                                   db_engine, params=(item_name,))
+        
+        if inventory_df.empty:
+            continue
+            
+        unit_price = float(inventory_df["unit_price"].iloc[0])
+        
+        # Calculate bulk discount DIRECTLY
+        total = quantity * unit_price
+        
+        if quantity >= 1001:
+            discount = 0.15
+        elif quantity >= 501:
+            discount = 0.10
+        elif quantity >= 100:
+            discount = 0.05
+        else:
+            discount = 0.0
+        
+        discounted_total = total * (1 - discount)
         
         quote_items.append({
             "item_name": item_name,
@@ -829,7 +841,16 @@ def generate_quote(items: List[Dict], date: str) -> Dict:
 def place_order(items: List[Dict], date: str) -> Dict:
     """
     Place an order for items (creates sales transactions).
-    items: List of {item_name, quantity, price}
+    
+    This function uses helper functions DIRECTLY (not via tools).
+    Tools are only for framework agents.
+    
+    Args:
+        items: List of {item_name, quantity, price}
+        date: Date for order
+        
+    Returns:
+        Dict with order results
     """
     results = []
     total_revenue = 0.0
@@ -839,10 +860,12 @@ def place_order(items: List[Dict], date: str) -> Dict:
         quantity = item["quantity"]
         price = item["price"]
         
-        # Check one more time if stock is available using helper
-        availability = _check_inventory_availability_dict(item_name, quantity, date)
+        # Check one more time if stock is available using helper DIRECTLY
+        stock_info = get_stock_level(item_name, date)
+        current_stock = int(stock_info["current_stock"].iloc[0]) if not stock_info.empty else 0
+        available = current_stock >= quantity
         
-        if availability["available"]:
+        if available:
             # Create sales transaction
             transaction_id = create_transaction(
                 item_name=item_name,
@@ -867,7 +890,7 @@ def place_order(items: List[Dict], date: str) -> Dict:
                 "quantity": quantity,
                 "price": 0,
                 "success": False,
-                "reason": f"Insufficient stock: {availability['current_stock']} available"
+                "reason": f"Insufficient stock: {current_stock} available"
             })
     
     return {
@@ -880,8 +903,29 @@ def place_order(items: List[Dict], date: str) -> Dict:
 def restock_item(item_name: str, quantity: int, date: str) -> Dict:
     """
     Restock an item (creates stock_orders transaction).
+    
+    This function uses helper functions DIRECTLY (not via tools).
+    Tools are only for framework agents.
+    
+    Args:
+        item_name: Name of item to restock
+        quantity: Quantity to order
+        date: Date of order
+        
+    Returns:
+        Dict with restock result
     """
-    unit_price = _get_item_price_float(item_name)
+    # Get price from database DIRECTLY
+    inventory_df = pd.read_sql("SELECT unit_price FROM inventory WHERE item_name = ?",
+                               db_engine, params=(item_name,))
+    
+    if inventory_df.empty:
+        return {
+            "success": False,
+            "reason": f"Item '{item_name}' not found in inventory"
+        }
+    
+    unit_price = float(inventory_df["unit_price"].iloc[0])
     total_cost = quantity * unit_price
     
     # Check if we have enough cash
@@ -964,10 +1008,233 @@ Example: [{"item_name": "A4 paper", "quantity": 200}, {"item_name": "Cardstock",
         return {"success": False, "error": str(e)}
 
 
-def inventory_agent(items: List[Dict], date: str) -> Dict:
+#Framework agent initializations
+inventory_agent = ToolCallingAgent(
+    tools=[check_inventory_availability, get_inventory_list, check_restock_needed],
+    model=model,
+    max_steps=5
+)
+
+# Restocking Agent: Uses restocking-related tools (defined below)
+@tool
+def restock_item_tool(item_name: str, quantity: int, date: str) -> str:
     """
-    Check inventory availability for all requested items.
-    Identifies items that need restocking.
+    Restock an item by creating a stock order transaction.
+    
+    Args:
+        item_name: Name of the item to restock
+        quantity: Quantity to order
+        date: Date in YYYY-MM-DD format
+        
+    Returns:
+        JSON string with restocking result
+    """
+    result = restock_item(item_name, quantity, date)
+    return json.dumps(result)
+
+@tool
+def get_supplier_delivery_date_tool(date: str, quantity: int) -> str:
+    """
+    Get estimated supplier delivery date.
+    
+    Args:
+        date: Order date in YYYY-MM-DD format
+        quantity: Order quantity
+        
+    Returns:
+        Delivery date string in YYYY-MM-DD format
+    """
+    return get_supplier_delivery_date(date, quantity)
+
+@tool
+def get_cash_balance_tool(date: str) -> str:
+    """
+    Get current cash balance as of a date.
+    
+    Args:
+        date: Date in YYYY-MM-DD format
+        
+    Returns:
+        JSON string with cash balance
+    """
+    balance = get_cash_balance(date)
+    return json.dumps({"cash_balance": balance, "date": date})
+
+# Restocking Agent: Uses restocking-related tools
+# This is a ToolCallingAgent INSTANCE (Framework Agent)
+restocking_agent = ToolCallingAgent(
+    tools=[restock_item_tool, get_supplier_delivery_date_tool, get_cash_balance_tool],
+    model=model,
+    max_steps=5
+)
+
+# Quoting Agent: Uses pricing and quote tools
+@tool
+def generate_quote_tool(items_json: str, date: str) -> str:
+    """
+    Generate a quote for multiple items with bulk discounts.
+    
+    Args:
+        items_json: JSON string of list of items [{"item_name": "...", "quantity": 123}, ...]
+        date: Date in YYYY-MM-DD format
+        
+    Returns:
+        JSON string with quote details
+    """
+    items = json.loads(items_json)
+    result = generate_quote(items, date)
+    return json.dumps(result)
+
+@tool
+def search_quote_history_tool(search_terms_json: str, limit: int = 5) -> str:
+    """
+    Search historical quotes for reference.
+    
+    Args:
+        search_terms_json: JSON array of search terms
+        limit: Maximum results to return
+        
+    Returns:
+        JSON string with historical quotes
+    """
+    search_terms = json.loads(search_terms_json)
+    results = search_quote_history(search_terms, limit)
+    return json.dumps(results)
+
+# Quoting Agent: Uses pricing and quote tools
+# This is a ToolCallingAgent INSTANCE (Framework Agent)
+quoting_agent = ToolCallingAgent(
+    tools=[calculate_bulk_discount, get_item_price, generate_quote_tool, search_quote_history_tool],
+    model=model,
+    max_steps=5
+)
+
+# Ordering Agent: Uses order placement tools
+@tool
+def place_order_tool(items_json: str, date: str) -> str:
+    """
+    Place an order for items (creates sales transactions).
+    
+    Args:
+        items_json: JSON string of list of items [{"item_name": "...", "quantity": 123, "price": 456.78}, ...]
+        date: Date in YYYY-MM-DD format
+        
+    Returns:
+        JSON string with order results
+    """
+    items = json.loads(items_json)
+    result = place_order(items, date)
+    return json.dumps(result)
+
+@tool
+def create_transaction_tool(item_name: str, transaction_type: str, quantity: int, price: float, date: str) -> str:
+    """
+    Create a transaction record.
+    
+    Args:
+        item_name: Name of the item
+        transaction_type: Either 'stock_orders' or 'sales'
+        quantity: Number of units
+        price: Total price
+        date: Date in YYYY-MM-DD format
+        
+    Returns:
+        Transaction ID as string
+    """
+    transaction_id = create_transaction(item_name, transaction_type, quantity, price, date)
+    return str(transaction_id)
+
+# Ordering Agent: Uses order placement tools
+# This is a ToolCallingAgent INSTANCE (Framework Agent)
+ordering_agent = ToolCallingAgent(
+    tools=[place_order_tool, create_transaction_tool],
+    model=model,
+    max_steps=5
+)
+
+
+# ========================================================================================
+# FRAMEWORK AGENT EXECUTION FUNCTIONS
+# ========================================================================================
+# These functions invoke the Framework Agents defined above
+# They use agent.run() method from smolagents ToolCallingAgent
+# The framework handles tool selection and execution based on the task
+# ========================================================================================
+
+# Helper function to run agents with proper error handling
+def run_agent_with_task(agent, task: str) -> str:
+    """
+    Run a smolagents ToolCallingAgent with a task and return the result.
+    
+    This function invokes the framework agent using agent.run() method.
+    The ToolCallingAgent uses its LLM to decide which tools to call based on the task.
+    
+    Args:
+        agent: A ToolCallingAgent instance (Framework Agent)
+        task: Natural language task description
+        
+    Returns:
+        String result from agent execution
+    """
+    try:
+        result = agent.run(task)  # FRAMEWORK METHOD: agent.run()
+        return str(result)
+    except Exception as e:
+        return json.dumps({"error": str(e), "success": False})
+
+
+def inventory_check_with_agent(items: List[Dict], date: str) -> Dict:
+    """
+    Use the inventory_agent (Framework ToolCallingAgent) to check availability.
+    
+    This function demonstrates Framework Agent usage:
+    1. inventory_agent is a ToolCallingAgent INSTANCE (not a function)
+    2. We call agent.run(task) - a FRAMEWORK METHOD
+    3. The framework's LLM decides which tools to use
+    4. The framework executes the selected tools
+    5. Results are returned
+    
+    Args:
+        items: List of items to check
+        date: Date for inventory check
+        
+    Returns:
+        Dict with availability results
+    """
+    items_str = "\n".join([f"- {item['item_name']}: {item['quantity']} units" for item in items])
+    
+    task = f"""Check inventory availability for these items as of {date}:
+{items_str}
+
+For each item:
+1. Use check_inventory_availability to verify stock levels
+2. Identify items that are unavailable or need restocking
+
+Return a JSON summary with:
+- availability_results: list of availability checks
+- items_to_restock: list of items needing restock with shortfall amounts
+- all_available: boolean"""
+
+    result_str = run_agent_with_task(inventory_agent, task)  # FRAMEWORK AGENT EXECUTION
+    
+    # Parse the result
+    try:
+        # Try to extract JSON from result
+        json_match = re.search(r'\{.*\}', result_str, re.DOTALL)
+        if json_match:
+            return json.loads(json_match.group())
+        else:
+            # Fallback to manual checking if agent fails
+            return inventory_agent_fallback(items, date)
+    except:
+        return inventory_agent_fallback(items, date)
+
+
+def inventory_agent_fallback(items: List[Dict], date: str) -> Dict:
+    """
+    Fallback method if framework agent fails - uses helper functions DIRECTLY.
+    
+    This fallback does NOT use tool wrappers - it uses helper functions directly.
     """
     availability_results = []
     items_to_restock = []
@@ -976,17 +1243,27 @@ def inventory_agent(items: List[Dict], date: str) -> Dict:
         item_name = item["item_name"]
         quantity = item["quantity"]
         
-        # Check availability using helper
-        availability = _check_inventory_availability_dict(item_name, quantity, date)
+        # Use helper function DIRECTLY (not via tool)
+        stock_info = get_stock_level(item_name, date)
+        current_stock = int(stock_info["current_stock"].iloc[0]) if not stock_info.empty else 0
+        available = current_stock >= quantity
+        
+        availability = {
+            "item_name": item_name,
+            "requested_quantity": quantity,
+            "current_stock": current_stock,
+            "available": available,
+            "shortfall": max(0, quantity - current_stock)
+        }
+        
         availability_results.append(availability)
         
-        # If not available, check if we need to restock
-        if not availability["available"]:
+        if not available:
             items_to_restock.append({
                 "item_name": item_name,
                 "needed_quantity": quantity,
-                "current_stock": availability["current_stock"],
-                "shortfall": availability["shortfall"]
+                "current_stock": current_stock,
+                "shortfall": max(0, quantity - current_stock)
             })
     
     return {
@@ -996,7 +1273,43 @@ def inventory_agent(items: List[Dict], date: str) -> Dict:
     }
 
 
-def quoting_agent(items: List[Dict], date: str, customer_context: str) -> Dict:
+def quoting_with_agent(items: List[Dict], date: str, customer_context: str) -> Dict:
+    """
+    Use the quoting agent (framework agent) to generate quotes.
+    """
+    items_json = json.dumps(items)
+    
+    task = f"""Generate a quote for a customer as of {date}.
+    
+Customer context: {customer_context}
+
+Items requested: {items_json}
+
+Tasks:
+1. Use generate_quote_tool with items_json='{items_json}' and date='{date}'
+2. Search historical quotes using search_quote_history_tool for similar orders
+3. Return the complete quote with explanations
+
+Return JSON with quote details including total_amount, quote_items, and historical_references."""
+
+    result_str = run_agent_with_task(quoting_agent, task)
+    
+    # Parse result or fallback
+    try:
+        json_match = re.search(r'\{.*\}', result_str, re.DOTALL)
+        if json_match:
+            result = json.loads(json_match.group())
+            # Ensure we have the explanation
+            if "explanation" not in result:
+                result["explanation"] = quoting_agent_fallback(items, date, customer_context).get("explanation", "")
+            return result
+        else:
+            return quoting_agent_fallback(items, date, customer_context)
+    except:
+        return quoting_agent_fallback(items, date, customer_context)
+
+
+def quoting_agent_fallback(items: List[Dict], date: str, customer_context: str) -> Dict:
     """
     Generate a quote with bulk discounts and search historical quotes for reference.
     """
@@ -1067,9 +1380,52 @@ Generate a professional quote explanation."""
         }
 
 
-def ordering_agent(quote: Dict, date: str) -> Dict:
+def ordering_with_agent(quote: Dict, date: str) -> Dict:
     """
-    Process the order based on the approved quote.
+    Use the ordering agent (framework agent) to process orders.
+    """
+    if quote.get("has_unavailable", False):
+        return {
+            "success": False,
+            "message": "Cannot process order: some items are unavailable",
+            "unavailable_items": quote["unavailable_items"]
+        }
+    
+    # Prepare order items for JSON
+    order_items = []
+    for item in quote["quote_items"]:
+        order_items.append({
+            "item_name": item["item_name"],
+            "quantity": item["quantity"],
+            "price": item["line_total"]
+        })
+    
+    items_json = json.dumps(order_items)
+    
+    task = f"""Place an order for the following items on {date}:
+
+{items_json}
+
+Use place_order_tool with items_json='{items_json}' and date='{date}'.
+
+Return JSON with order results including success status and total_revenue."""
+
+    result_str = run_agent_with_task(ordering_agent, task)
+    
+    # Parse result or fallback
+    try:
+        json_match = re.search(r'\{.*\}', result_str, re.DOTALL)
+        if json_match:
+            return json.loads(json_match.group())
+        else:
+            return ordering_agent_fallback(quote, date)
+    except:
+        return ordering_agent_fallback(quote, date)
+
+
+def ordering_agent_fallback(quote: Dict, date: str) -> Dict:
+    """
+    Fallback method for ordering when framework agent fails.
     """
     if quote.get("has_unavailable", False):
         return {
@@ -1093,7 +1449,41 @@ def ordering_agent(quote: Dict, date: str) -> Dict:
     return order_result
 
 
-def restocking_agent(items_to_restock: List[Dict], date: str) -> Dict:
+def restocking_with_agent(items_to_restock: List[Dict], date: str) -> Dict:
+    """
+    Use the restocking agent (framework agent) to restock items.
+    """
+    items_str = "\n".join([f"- {item['item_name']}: need {item['shortfall']} units (current: {item['current_stock']})" 
+                           for item in items_to_restock])
+    
+    task = f"""Restock the following items as of {date}:
+
+{items_str}
+
+For each item:
+1. Use get_cash_balance_tool to check available funds
+2. Use restock_item_tool to place restock orders (add 200 buffer units to shortfall)
+3. Use get_supplier_delivery_date_tool to estimate delivery
+
+Return JSON with:
+- restock_results: list of restock operations
+- total_cost: sum of all costs
+- success: boolean"""
+
+    result_str = run_agent_with_task(restocking_agent, task)
+    
+    # Parse result or fallback
+    try:
+        json_match = re.search(r'\{.*\}', result_str, re.DOTALL)
+        if json_match:
+            return json.loads(json_match.group())
+        else:
+            return restocking_agent_fallback(items_to_restock, date)
+    except:
+        return restocking_agent_fallback(items_to_restock, date)
+
+
+def restocking_agent_fallback(items_to_restock: List[Dict], date: str) -> Dict:
     """
     Restock items that are low or out of stock.
     """
@@ -1122,12 +1512,12 @@ def orchestrator_agent(customer_request: str, date: str) -> str:
     """
     Main orchestrator that coordinates all agents to handle customer requests.
     
-    Workflow:
+    This orchestrator uses framework-based agents (ToolCallingAgent from smolagents) to:
     1. Parse the customer request to extract items and quantities
-    2. Check inventory availability
-    3. If items unavailable, attempt restocking
-    4. Generate quote with bulk discounts
-    5. Process order if everything is available
+    2. Check inventory availability using inventory_agent with its tools
+    3. If items unavailable, attempt restocking using restocking_agent with its tools
+    4. Generate quote with bulk discounts using quoting_agent with its tools
+    5. Process order using ordering_agent with its tools
     6. Return comprehensive response
     """
     
@@ -1142,13 +1532,13 @@ def orchestrator_agent(customer_request: str, date: str) -> str:
     if not items:
         return "Error: No items found in your request. Please specify the items and quantities you need."
     
-    # Step 2: Check inventory
-    inventory_check = inventory_agent(items, date)
+    # Step 2: Check inventory using framework agent
+    inventory_check = inventory_check_with_agent(items, date)
     
-    # Step 3: Handle restocking if needed
+    # Step 3: Handle restocking if needed using framework agent
     restocking_message = ""
     if not inventory_check["all_available"]:
-        restock_result = restocking_agent(inventory_check["items_to_restock"], date)
+        restock_result = restocking_with_agent(inventory_check["items_to_restock"], date)
         
         if restock_result["success"]:
             restocking_message = f"\nNote: We've placed restock orders for items that were low in inventory (Cost: ${restock_result['total_cost']:.2f})."
@@ -1161,16 +1551,16 @@ def orchestrator_agent(customer_request: str, date: str) -> str:
         else:
             return f"Unfortunately, some items are out of stock and we cannot fulfill your complete order at this time:\n{inventory_check['items_to_restock']}"
     
-    # Step 4: Generate quote
-    quote = quoting_agent(items, date, customer_request)
+    # Step 4: Generate quote using framework agent
+    quote = quoting_with_agent(items, date, customer_request)
     
     if quote.get("has_unavailable", False):
         unavailable_list = "\n".join([f"- {item['item_name']}: need {item['requested']}, have {item['available']}" 
                                       for item in quote["unavailable_items"]])
         return f"Quote cannot be completed. The following items are unavailable:\n{unavailable_list}{restocking_message}"
     
-    # Step 5: Process order
-    order_result = ordering_agent(quote, date)
+    # Step 5: Process order using framework agent
+    order_result = ordering_with_agent(quote, date)
     
     if not order_result["success"]:
         return f"Error processing order: {order_result.get('message', 'Unknown error')}"

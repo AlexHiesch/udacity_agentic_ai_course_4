@@ -6,6 +6,7 @@ graph TB
     classDef llm fill:#9b59b6,stroke:#7d3c98,stroke-width:2px,color:#fff
     classDef db fill:#e74c3c,stroke:#c0392b,stroke-width:2px,color:#fff
     classDef decision fill:#f1c40f,stroke:#d4a017,stroke-width:2px,color:#000
+    classDef framework fill:#16a085,stroke:#117a65,stroke-width:3px,color:#fff
     
     %% Customer Request Input
     START([Customer Request<br/>Natural Language]) --> ORCH
@@ -18,41 +19,56 @@ graph TB
     PARSE -->|Uses| LLM1[OpenAI GPT-4o-mini]:::llm
     PARSE -->|Extracts| ITEMS[Structured Items:<br/>item_name, quantity]
     
-    %% Step 2: Inventory Agent
-    ITEMS -->|2. Check Availability| INV[📦 INVENTORY AGENT<br/>Stock Management]:::agent
-    INV -->|Uses Tools| T1[check_inventory_availability]:::tool
-    INV -->|Uses Tools| T2[get_inventory_list]:::tool
-    INV -->|Uses Tools| T3[check_restock_needed]:::tool
-    T1 & T2 & T3 -->|Query| DB1[(SQLite Database<br/>munder_difflin.db)]:::db
+    %% Step 2: Inventory Agent (Framework Agent)
+    ITEMS -->|2. Check Availability| INV[📦 INVENTORY AGENT<br/>ToolCallingAgent<br/>smolagents Framework]:::framework
+    INV -->|Framework Uses Tools| T1["@tool<br/>check_inventory_availability"]:::tool
+    INV -->|Framework Uses Tools| T2["@tool<br/>get_inventory_list"]:::tool
+    INV -->|Framework Uses Tools| T3["@tool<br/>check_restock_needed"]:::tool
+    T1 -->|Calls Helper| H1[get_stock_level]
+    T2 -->|Calls Helper| H2[get_all_inventory]
+    T3 -->|Calls Helper| H3[get_stock_level]
+    H1 & H2 & H3 -->|Query| DB1[(SQLite Database<br/>munder_difflin.db)]:::db
     
     %% Decision: Restock Needed?
     INV -->|Availability Results| DEC1{Items Need<br/>Restocking?}:::decision
     
-    %% Step 3: Restocking Agent (if needed)
-    DEC1 -->|Yes| REST[🔄 RESTOCKING AGENT<br/>Supplier Orders]:::agent
-    REST -->|Uses| T4[restock_item<br/>get_supplier_delivery_date<br/>get_cash_balance]:::tool
-    T4 -->|Create Transaction| DB1
+    %% Step 3: Restocking Agent (Framework Agent)
+    DEC1 -->|Yes| REST[🔄 RESTOCKING AGENT<br/>ToolCallingAgent<br/>smolagents Framework]:::framework
+    REST -->|Framework Uses Tools| T4["@tool<br/>restock_item_tool"]:::tool
+    REST -->|Framework Uses Tools| T5["@tool<br/>get_supplier_delivery_date_tool"]:::tool
+    REST -->|Framework Uses Tools| T6["@tool<br/>get_cash_balance_tool"]:::tool
+    T4 -->|Calls Helper| H4[restock_item]
+    T5 -->|Calls Helper| H5[get_supplier_delivery_date]
+    T6 -->|Calls Helper| H6[get_cash_balance]
+    H4 & H6 -->|Query/Update| DB1
     REST -->|Restock Complete| DEC2
     DEC1 -->|No| DEC2
     
     %% Decision: All Items Available?
     DEC2{All Items<br/>Available?}:::decision
     
-    %% Step 4: Quoting Agent
-    DEC2 -->|Yes| QUOTE[💰 QUOTING AGENT<br/>Price Calculation]:::agent
+    %% Step 4: Quoting Agent (Framework Agent)
+    DEC2 -->|Yes| QUOTE[💰 QUOTING AGENT<br/>ToolCallingAgent<br/>smolagents Framework]:::framework
     DEC2 -->|Some Unavailable| QUOTE
-    QUOTE -->|Uses Tools| T5[calculate_bulk_discount<br/>get_item_price]:::tool
-    QUOTE -->|Business Logic| T6[generate_quote<br/>search_quote_history]:::tool
+    QUOTE -->|Framework Uses Tools| T7["@tool<br/>calculate_bulk_discount"]:::tool
+    QUOTE -->|Framework Uses Tools| T8["@tool<br/>get_item_price"]:::tool
+    QUOTE -->|Framework Uses Tools| T9["@tool<br/>generate_quote_tool"]:::tool
+    QUOTE -->|Framework Uses Tools| T10["@tool<br/>search_quote_history_tool"]:::tool
+    T9 -->|Calls Helper| H7[generate_quote]
+    T10 -->|Calls Helper| H8[search_quote_history]
     QUOTE -->|Generate Explanation| LLM2[OpenAI GPT-4o-mini]:::llm
-    T5 & T6 -->|Query| DB1
+    H7 & H8 -->|Query| DB1
     
     %% Decision: Quote Can Be Fulfilled?
     QUOTE -->|Quote Ready| DEC3{Quote Can Be<br/>Fulfilled?}:::decision
     
-    %% Step 5: Ordering Agent (if fulfillable)
-    DEC3 -->|Yes - All Available| ORDER[🛒 ORDERING AGENT<br/>Sales Processing]:::agent
-    ORDER -->|Uses| T7[place_order<br/>create_transaction]:::tool
-    T7 -->|Update Inventory<br/>Record Revenue| DB1
+    %% Step 5: Ordering Agent (Framework Agent)
+    DEC3 -->|Yes - All Available| ORDER[🛒 ORDERING AGENT<br/>ToolCallingAgent<br/>smolagents Framework]:::framework
+    ORDER -->|Framework Uses Tools| T11["@tool<br/>place_order_tool"]:::tool
+    ORDER -->|Framework Uses Tools| T12["@tool<br/>create_transaction_tool"]:::tool
+    T11 -->|Calls Helper| H9[place_order]
+    T12 -->|Calls Helper| H10[create_transaction]
+    H9 & H10 -->|Update Inventory<br/>Record Revenue| DB1
     ORDER -->|Order Complete| RESPONSE1
     
     %% Alternative: Cannot Fulfill
@@ -65,21 +81,23 @@ graph TB
     %% Final Output
     FINAL([Customer Response<br/>with Details])
     
-    %% Framework Integration
-    subgraph FRAMEWORK [smolagents Framework]
-        TOOLS[All Tools Decorated<br/>with @tool]:::tool
-        TOOLS -.-> T1 & T2 & T3 & T5 & T7
+    %% Framework Integration Note
+    subgraph FRAMEWORK_INFO [" "]
+        NOTE1["🔧 Framework Integration:<br/>All agents are ToolCallingAgent instances<br/>Tools are @tool decorated functions<br/>Framework manages tool invocation"]:::llm
     end
     
-    %% Database Helper Functions
-    subgraph HELPERS [Helper Functions from Starter Code]
-        H1[create_transaction]
+    %% Database Helper Functions Used by Tools
+    subgraph HELPERS [Helper Functions Called by Tools]
+        H1[get_stock_level]
         H2[get_all_inventory]
         H3[get_stock_level]
-        H4[get_supplier_delivery_date]
-        H5[get_cash_balance]
-        H6[generate_financial_report]
-        H7[search_quote_history]
+        H4[restock_item]
+        H5[get_supplier_delivery_date]
+        H6[get_cash_balance]
+        H7[generate_quote]
+        H8[search_quote_history]
+        H9[place_order]
+        H10[create_transaction]
     end
     
     DB1 -.->|Uses| HELPERS

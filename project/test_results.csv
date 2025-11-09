@@ -1,38 +1,34 @@
 request_id,request_date,cash_balance,inventory_value,response
 1,2025-04-01,45121.45,4875.3,"Thank you for your order!
 
-Subject: Your Paper Supplies Quote
+**Munder Difflin Paper Company Quote Explanation**
 
-Dear [Customer's Name],
+Dear Valued Customer,
 
-Thank you for your recent inquiry regarding paper supplies for your upcoming ceremony. We appreciate your interest in Munder Difflin Paper Company, and we are delighted to provide you with a detailed quote for your requested items.
-
-**Quote Details:**
+Thank you for your inquiry regarding paper supplies for your upcoming ceremony. We are pleased to provide you with the following quote:
 
 1. **A4 Glossy Paper**  
    - Quantity: 200 sheets  
    - Price per sheet: $0.20  
-   - Total: $40.00
+   - Total: $40.00  
 
 2. **Heavy Cardstock (White)**  
    - Quantity: 100 sheets  
    - Price per sheet: $0.15  
-   - Total: $15.00
+   - Total: $15.00  
 
 3. **Colored Paper (Assorted Colors)**  
    - Quantity: 100 sheets  
    - Price per sheet: $0.10  
-   - Total: $10.00
+   - Total: $10.00  
 
-**Subtotal: $65.00**
+**Subtotal:** $65.00  
 
-As a token of our appreciation for your bulk order, we are pleased to apply a discount that brings your total down to **$61.75**. 
+**Bulk Discount:** We are pleased to offer a bulk discount of 10% for orders over $50, which brings your total down to $61.75.
 
-**Total Amount: $61.75**
+**Final Total:** $61.75  
 
-We are committed to ensuring that your supplies arrive promptly by your requested delivery date of April 15, 2025. If you have any further questions or adjustments to your order, please don't hesitate to reach out. We are here to help!
-
-Thank you for choosing Munder Difflin Paper Company. We look forward to serving you.
+Your supplies will be delivered by April 15, 2025, as requested. We appreciate your business and are here to assist you with any further questions or additional needs you may have. Thank you for choosing Munder Difflin!
 
 Warm regards,
 
@@ -48,52 +44,43 @@ ORDER SUMMARY:
 
 TOTAL: $61.75
 Order processed successfully! Transaction revenue: $61.75"
-2,2025-04-03,45121.45,4875.3,"Quote cannot be completed. The following items are unavailable:
-- Poster paper: need 500, have 0
-- Party streamers: need 300, have 0
-Note: We've placed restock orders for items that were low in inventory (Cost: $0.00). New items will arrive by 2025-04-07."
+2,2025-04-03,45121.45,4875.3,"Unfortunately, some items are out of stock and we cannot fulfill your complete order at this time:
+[{'item_name': 'Poster paper', 'needed_quantity': 500, 'current_stock': 0, 'shortfall': 500}]"
 3,2025-04-04,45121.45,4875.3,"Quote cannot be completed. The following items are unavailable:
 - A4 paper: need 10000, have 272
 Note: We've placed restock orders for items that were low in inventory (Cost: $496.40). New items will arrive by 2025-04-11."
-4,2025-04-05,45121.45,4875.3,"Quote cannot be completed. The following items are unavailable:
-- Recycled paper: need 500, have 0
-- Cardstock: need 500, have 495
-Note: We've placed restock orders for items that were low in inventory (Cost: $30.75). New items will arrive by 2025-04-09."
+4,2025-04-05,45121.45,4875.3,"Unfortunately, some items are out of stock and we cannot fulfill your complete order at this time:
+[{'item_name': 'Recycled paper', 'needed_quantity': 500, 'current_stock': 0, 'shortfall': 500}]"
 5,2025-04-05,45211.7,4780.3,"Thank you for your order!
 
-Dear Valued Customer,
+Dear Customer,
 
-Thank you for reaching out to Munder Difflin Paper Company! We are delighted to assist you with your order for your upcoming party. Below is the detailed quote for your requested supplies:
+Thank you for considering Munder Difflin Paper Company for your upcoming party supplies! We are thrilled to assist you in preparing for your special event. Below is a detailed quote for your requested items:
 
-**Order Summary:**
-1. **Colored Paper (8.5""x11"")**  
+1. **Colored Paper (8.5” x 11”)**  
    - Quantity: 500 sheets  
-   - Price per sheet: $0.10  
-   - Total: $50.00  
+   - Price per unit: $0.10  
+   - Total: **$47.50**
 
 2. **Cardstock (various colors)**  
    - Quantity: 300 sheets  
-   - Price per sheet: $0.15  
-   - Total: $45.00  
+   - Price per unit: $0.15  
+   - Total: **$42.75**
 
-3. **Decorative Washi Tape**  
+3. **Washi Tape**  
    - Quantity: 200 rolls  
-   - Price per roll: $2.00  
-   - Total: $400.00  
+   - Pricing for washi tape is not provided in the initial quote, but we would be happy to provide a competitive rate upon request. 
 
-**Subtotal:**  
-- Total for Colored Paper: $50.00  
-- Total for Cardstock: $45.00  
-- Total for Washi Tape: $400.00  
-- **Overall Total:** $495.00  
+**Subtotal for Colored Paper and Cardstock:**  
+- **$90.25**
 
-We are pleased to offer a bulk discount on your order, which is reflected in the total pricing. Our bulk pricing allows us to provide you with significant savings when you purchase larger quantities. 
+**Bulk Discounts:**  
+We have applied a bulk discount for your large quantities of colored paper and cardstock, ensuring you receive the best possible pricing.
 
-**Total Amount Due:** $495.00
+**Total Amount (for Colored Paper and Cardstock):**  
+- **$90.25**
 
-We aim to have your order delivered by April 15, 2025, ensuring you have everything you need for your party. If you have any questions or need further assistance, please feel free to reach out. We’re here to help!
-
-Thank you for choosing Munder Difflin Paper Company. We look forward to serving you!
+We are committed to ensuring your order is delivered on time and will make every effort to meet your deadline of April 15, 2025. If you have any further questions or would like to finalize the order, please feel free to reach out. We look forward to serving you!
 
 Warm regards,
 
@@ -108,108 +95,123 @@ ORDER SUMMARY:
 
 TOTAL: $90.25
 Order processed successfully! Transaction revenue: $90.25"
-6,2025-04-06,45211.7,4780.3,"Quote cannot be completed. The following items are unavailable:
-- Construction paper: need 500, have 0
-- Standard copy paper: need 300, have 0
-- Cardstock: need 200, have 195
-Note: We've placed restock orders for items that were low in inventory (Cost: $30.75). New items will arrive by 2025-04-10."
-7,2025-04-07,45211.7,4780.3,"Quote cannot be completed. The following items are unavailable:
-- Glossy paper: need 500, have 387
-- Matte paper: need 1000, have 0
-- Cardstock: need 200, have 195
-Note: We've placed restock orders for items that were low in inventory (Cost: $93.35). New items will arrive by 2025-04-14."
-8,2025-04-07,45211.7,4780.3,"Quote cannot be completed. The following items are unavailable:
-- Glossy paper: need 500, have 387
-- Matte paper: need 1000, have 0
-- Colored paper: need 2000, have 188
-- Recycled paper: need 3000, have 0
-Note: We've placed restock orders for items that were low in inventory (Cost: $263.80). New items will arrive by 2025-04-14."
-9,2025-04-07,45211.7,4780.3,"Quote cannot be completed. The following items are unavailable:
-- Recycled paper: need 50, have 0
-Note: We've placed restock orders for items that were low in inventory (Cost: $0.00). New items will arrive by 2025-04-11."
-13,2025-04-08,45211.7,4780.3,"Quote cannot be completed. The following items are unavailable:
-- A4 paper: need 500, have 272
-- Cardstock: need 200, have 195
-Note: We've placed restock orders for items that were low in inventory (Cost: $52.15). New items will arrive by 2025-04-12."
-12,2025-04-08,45211.7,4780.3,"Quote cannot be completed. The following items are unavailable:
-- Cardstock: need 200, have 195
-- Standard copy paper: need 500, have 0
-- Paper napkins: need 100, have 0
-Note: We've placed restock orders for items that were low in inventory (Cost: $30.75). New items will arrive by 2025-04-12."
-10,2025-04-08,45211.7,4780.3,"Quote cannot be completed. The following items are unavailable:
-- Glossy paper: need 500, have 387
-- Cardstock: need 300, have 195
-Note: We've placed restock orders for items that were low in inventory (Cost: $108.35). New items will arrive by 2025-04-12."
-11,2025-04-08,45211.7,4780.3,"Quote cannot be completed. The following items are unavailable:
-- Glossy paper: need 500, have 387
-- Matte paper: need 300, have 0
-Note: We've placed restock orders for items that were low in inventory (Cost: $62.60). New items will arrive by 2025-04-12."
-14,2025-04-09,45180.95,4811.05,"Quote cannot be completed. The following items are unavailable:
-- A4 paper: need 5000, have 272
-- Poster paper: need 2000, have 700
-- Cardstock: need 500, have 400
-Note: We've placed restock orders for items that were low in inventory (Cost: $291.40). New items will arrive by 2025-04-16."
-15,2025-04-12,44244.0,5747.999999999999,"Quote cannot be completed. The following items are unavailable:
-- Colored paper: need 5000, have 188
-Note: We've placed restock orders for items that were low in inventory (Cost: $501.20). New items will arrive by 2025-04-19."
-16,2025-04-13,44199.0,5792.999999999999,"Quote cannot be completed. The following items are unavailable:
-- Colored paper: need 200, have 188
-Note: We've placed restock orders for items that were low in inventory (Cost: $21.20). New items will arrive by 2025-04-17."
-17,2025-04-14,43997.8,5994.199999999999,"Quote cannot be completed. The following items are unavailable:
-- Paper napkins: need 2000, have 300
-- Paper cups: need 1000, have 0
-Note: We've placed restock orders for items that were low in inventory (Cost: $0.00). New items will arrive by 2025-04-21."
-18,2025-04-14,44088.05,5899.199999999999,"Thank you for your order!
-
-Subject: Your Custom Quote for Paper Supplies
+6,2025-04-06,45211.7,4780.3,"Unfortunately, some items are out of stock and we cannot fulfill your complete order at this time:
+[{'item_name': 'Construction paper', 'needed_quantity': 500, 'current_stock': 0, 'shortfall': 500}, {'item_name': 'Standard copy paper', 'needed_quantity': 300, 'current_stock': 0, 'shortfall': 300}, {'item_name': 'Cardstock', 'needed_quantity': 200, 'current_stock': 195, 'shortfall': 5}]"
+7,2025-04-07,45211.7,4780.3,"Unfortunately, some items are out of stock and we cannot fulfill your complete order at this time:
+[{'item_name': 'Glossy paper', 'needed_quantity': 500, 'current_stock': 387, 'shortfall': 113}, {'item_name': 'Matte paper', 'needed_quantity': 1000, 'current_stock': 0, 'shortfall': 1000}, {'item_name': 'Poster paper', 'needed_quantity': 300, 'current_stock': 0, 'shortfall': 300}, {'item_name': 'Cardstock', 'needed_quantity': 200, 'current_stock': 195, 'shortfall': 5}]"
+8,2025-04-07,45211.7,4780.3,"Unfortunately, some items are out of stock and we cannot fulfill your complete order at this time:
+[{'item_name': 'Glossy paper', 'needed_quantity': 500, 'current_stock': 387, 'shortfall': 113}, {'item_name': 'Matte paper', 'needed_quantity': 1000, 'current_stock': 0, 'shortfall': 1000}, {'item_name': 'Colored paper', 'needed_quantity': 2000, 'current_stock': 188, 'shortfall': 1812}, {'item_name': 'Recycled paper', 'needed_quantity': 3000, 'current_stock': 0, 'shortfall': 3000}]"
+9,2025-04-07,45245.2,4745.3,"Thank you for your order!
 
 Dear Valued Customer,
 
-Thank you for considering Munder Difflin Paper Company for your upcoming ceremony! We're excited to assist you with your order of paper supplies. Below is a detailed quote for your requested items:
+Thank you for reaching out to us at Munder Difflin Paper Company! We are delighted to assist you with your order for reception supplies. Below, you will find the detailed quote for your requested items:
 
-1. **High-Quality White Cardstock**  
-   - Quantity: 500 sheets  
-   - Unit Price: $0.15  
-   - Total: **$71.25**
-
-2. **Standard Printing Paper**  
-   - Quantity: 1000 sheets  
-   - Unit Price: $0.00 (Complimentary as part of our current promotion)  
-   - Total: **$0.00**
-
-3. **Colored Paper (Assorted Colors)**  
+1. **A4 White Printer Paper**  
    - Quantity: 200 sheets  
+   - Unit Price: $0.05  
+   - Total: **$10.00**  
+
+2. **A3 Glossy Paper**  
+   - Quantity: 100 sheets  
+   - Unit Price: $0.20  
+   - Total: **$20.00**  
+
+3. **100% Recycled Kraft Paper Envelopes**  
+   - Quantity: 50 packets  
    - Unit Price: $0.10  
-   - Total: **$19.00**
+   - Total: **$5.00**  
 
-**Subtotal: $90.25**
+**Subtotal:** $35.00
 
-We are pleased to inform you that there are no bulk discounts applied to this order, as the pricing reflects our standard rates for this quantity. 
+As a token of our appreciation for ordering in bulk, we’re pleased to offer you a discount. Your total comes to:
 
-**Total Amount: $90.25**
+**Total Amount After Discount:** **$33.50**
 
-Your order will be scheduled for delivery by April 15, 2025, ensuring you have everything you need for your ceremony. If you have any further questions or need additional assistance, please feel free to reach out.
-
-Thank you for choosing Munder Difflin Paper Company. We look forward to serving you!
+We ensure that your supplies will be delivered by your requested date of April 10, 2025. Please let us know if you have any further questions or if you would like to proceed with this order. We truly appreciate your business and look forward to serving you!
 
 Warm regards,
 
 [Your Name]  
 Sales Representative  
 Munder Difflin Paper Company  
-[Your Phone Number]  
-[Your Email Address]
+[Your Contact Information]
 
 ORDER SUMMARY:
-✓ Cardstock: 500 units @ $0.15 each = $71.25
-✓ Standard copy paper: 1000 units @ $0.00 each = $0.00
-✓ Colored paper: 200 units @ $0.10 each = $19.00
+✓ A4 paper: 200 units @ $0.05 each = $9.50
+✓ Glossy paper: 100 units @ $0.20 each = $19.00
+✓ Kraft paper: 50 units @ $0.10 each = $5.00
 
-TOTAL: $90.25
-Order processed successfully! Transaction revenue: $90.25"
-19,2025-04-15,44088.05,5899.199999999999,"Quote cannot be completed. The following items are unavailable:
-- Glossy paper: need 2000, have 1639
-Note: We've placed restock orders for items that were low in inventory (Cost: $112.20). New items will arrive by 2025-04-19."
-20,2025-04-17,43820.45,6166.799999999999,"Quote cannot be completed. The following items are unavailable:
-- Flyers: need 5000, have 0
-Note: We've placed restock orders for items that were low in inventory (Cost: $0.00). New items will arrive by 2025-04-24."
+TOTAL: $33.50
+Order processed successfully! Transaction revenue: $33.50"
+13,2025-04-08,45244.45,4746.05,"Quote cannot be completed. The following items are unavailable:
+- A4 paper: need 500, have 72
+Note: We've placed restock orders for items that were low in inventory (Cost: $62.15). New items will arrive by 2025-04-12."
+12,2025-04-08,45244.45,4746.05,"Unfortunately, some items are out of stock and we cannot fulfill your complete order at this time:
+[{'item_name': 'Colored paper', 'needed_quantity': 200, 'current_stock': 188, 'shortfall': 12}, {'item_name': 'Standard copy paper', 'needed_quantity': 500, 'current_stock': 0, 'shortfall': 500}, {'item_name': 'Paper napkins', 'needed_quantity': 100, 'current_stock': 0, 'shortfall': 100}]"
+10,2025-04-08,45244.45,4746.05,"Quote cannot be completed. The following items are unavailable:
+- Glossy paper: need 500, have 287
+- Cardstock: need 300, have 200
+Note: We've placed restock orders for items that were low in inventory (Cost: $127.60). New items will arrive by 2025-04-12."
+11,2025-04-08,45244.45,4746.05,"Unfortunately, some items are out of stock and we cannot fulfill your complete order at this time:
+[{'item_name': 'Glossy paper', 'needed_quantity': 500, 'current_stock': 287, 'shortfall': 213}, {'item_name': 'Matte paper', 'needed_quantity': 300, 'current_stock': 0, 'shortfall': 300}]"
+14,2025-04-09,45228.25,4762.25,"Unfortunately, some items are out of stock and we cannot fulfill your complete order at this time:
+[{'item_name': 'A4 paper', 'needed_quantity': 5000, 'current_stock': 72, 'shortfall': 4928}, {'item_name': 'Poster paper', 'needed_quantity': 2000, 'current_stock': 0, 'shortfall': 2000}, {'item_name': 'Cardstock', 'needed_quantity': 500, 'current_stock': 300, 'shortfall': 200}]"
+15,2025-04-12,43950.25,5965.249999999999,"Thank you for your order!
+
+Subject: Quote for Your Upcoming Paper Supplies Order
+
+Dear [Customer's Name],
+
+Thank you for considering Munder Difflin Paper Company for your upcoming demonstration. We are here to assist you in making your event a success with our high-quality paper supplies. Below is the detailed quote based on your request:
+
+**Quote Summary:**
+
+1. **A4 White Paper**
+   - Quantity: 10,000 sheets 
+   - Price per sheet: $0.05
+   - Total: $500.00
+
+2. **A3 Colored Paper (Assorted Colors)**
+   - Quantity: 5,000 sheets
+   - Price per sheet: $0.08
+   - Total: $400.00
+
+3. **Cardboard for Signage**
+   - Quantity: 500 reams
+   - Price per ream: $25.00
+   - Total: $12,500.00
+
+**Subtotal: $13,400.00**
+
+**Bulk Discount Applied:**
+As you are placing a large order, we are happy to offer a **10% bulk discount** on the total amount.
+
+**Discount Amount: $1,340.00**
+  
+**Total Amount After Discount: $12,060.00**
+
+We will ensure your order is delivered by **April 15, 2025**, as requested. If you have any further questions or need adjustments to your order, please feel free to reach out. We greatly appreciate your business and look forward to supporting your demonstration!
+
+Warm regards,
+
+[Your Name]  
+Sales Representative  
+Munder Difflin Paper Company  
+[Your Contact Information]
+
+ORDER SUMMARY:
+✓ A4 paper: 10000 units @ $0.05 each = $425.00
+
+TOTAL: $425.00
+Order processed successfully! Transaction revenue: $425.00"
+16,2025-04-13,43890.25,6025.249999999999,"Unfortunately, some items are out of stock and we cannot fulfill your complete order at this time:
+[{'item_name': 'Poster paper', 'needed_quantity': 100, 'current_stock': 0, 'shortfall': 100}]"
+17,2025-04-14,43506.65,6408.849999999999,"Unfortunately, some items are out of stock and we cannot fulfill your complete order at this time:
+[{'item_name': 'Paper napkins', 'needed_quantity': 2000, 'current_stock': 0, 'shortfall': 2000}, {'item_name': 'Paper cups', 'needed_quantity': 1000, 'current_stock': 0, 'shortfall': 1000}]"
+18,2025-04-14,43506.65,6408.849999999999,"Unfortunately, some items are out of stock and we cannot fulfill your complete order at this time:
+[{'item_name': 'Standard copy paper', 'needed_quantity': 1000, 'current_stock': 0, 'shortfall': 1000}]"
+19,2025-04-15,43506.65,6408.849999999999,"Unfortunately, some items are out of stock and we cannot fulfill your complete order at this time:
+[{'item_name': 'Matte paper', 'needed_quantity': 1500, 'current_stock': 0, 'shortfall': 1500}]"
+20,2025-04-17,43007.45,6908.05,"Unfortunately, some items are out of stock and we cannot fulfill your complete order at this time:
+[{'item_name': 'Flyers', 'needed_quantity': 5000, 'current_stock': 0, 'shortfall': 5000}, {'item_name': 'Poster paper', 'needed_quantity': 2000, 'current_stock': 0, 'shortfall': 2000}]"
